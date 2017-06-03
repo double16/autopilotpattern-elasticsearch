@@ -18,15 +18,18 @@ RUN export ES_PKG=elasticsearch-2.2.0.deb && \
     rm /etc/elasticsearch/elasticsearch.yml
 
 # Add Containerpilot and set its configuration
-ENV CONTAINERPILOT_VER 2.1.0
+ENV CONTAINERPILOT_VER 2.7.3
 ENV CONTAINERPILOT file:///etc/containerpilot.json
 
-RUN export CONTAINERPILOT_CHECKSUM=e7973bf036690b520b450c3a3e121fc7cd26f1a2 \
+RUN export CONTAINERPILOT_CHECKSUM=2511fdfed9c6826481a9048e8d34158e1d7728bf \
     && curl -Lso /tmp/containerpilot.tar.gz \
          "https://github.com/joyent/containerpilot/releases/download/${CONTAINERPILOT_VER}/containerpilot-${CONTAINERPILOT_VER}.tar.gz" \
     && echo "${CONTAINERPILOT_CHECKSUM}  /tmp/containerpilot.tar.gz" | sha1sum -c \
     && tar zxf /tmp/containerpilot.tar.gz -C /usr/local/bin \
     && rm /tmp/containerpilot.tar.gz
+
+RUN curl --fail -sL https://github.com/justwatchcom/elasticsearch_exporter/releases/download/0.3.0/elasticsearch_exporter-0.3.0.linux-amd64.tar.gz \
+    | tar -C /usr/local/bin -xzf -
 
 # Create and take ownership over required directories
 RUN mkdir -p /var/lib/elasticsearch/data && \
@@ -40,6 +43,7 @@ USER elasticsearch
 COPY /etc/containerpilot.json /etc
 COPY /etc/elasticsearch.yml /etc/elasticsearch/elasticsearch.yml
 COPY /bin/manage.sh /usr/local/bin
+COPY /bin/metrics.sh /usr/local/bin
 
 # Expose the data directory as a volume in case we want to mount these
 # as a --volumes-from target; it's important that this VOLUME comes
@@ -52,3 +56,13 @@ VOLUME /var/lib/elasticsearch/data
 # for purposes of linking.
 EXPOSE 9200
 EXPOSE 9300
+
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.license="MPL-2.0" \
+      org.label-schema.name="Autopilot Pattern Elasticsearc with Prometheus Metrics" \
+      org.label-schema.url="https://github.com/double16/autopilotpattern-elasticsearch" \
+      org.label-schema.docker.dockerfile="Dockerfile" \
+      org.label-schema.vcs-ref=$SOURCE_REF \
+      org.label-schema.vcs-type='git' \
+      org.label-schema.vcs-url="https://github.com/double16/autopilotpattern-elasticsearch.git"
+
